@@ -18,16 +18,23 @@ import (
 	"time"
 )
 
+// A Signer is a function that takes a signing string, and returns a byte array
+// containing the signature. Used when creating a custom RequestSigner
 type Signer func(string) ([]byte, error)
 
+// RequestSigner contains the SignRequest method which signs a request and
+// populates the Authorization Header
 type RequestSigner struct {
 	keyId     string
 	algorithm string
 	signer    Signer
 }
 
+// If SignStrict is true, then obsolete versions of the HTTP-Signature standard will not be supported.
+// Currently, this controls whether to allow the "request-line" psuedo-header.
 var SignStrict bool = false
 
+// NewRequestSigner creates a new RequestSigner with the given keyId, key, and algorithm.
 func NewRequestSigner(keyId string, key string, algorithm string) (*RequestSigner, error) {
 	signer, err := getSigner(algorithm, key)
 	if err != nil {
@@ -40,6 +47,7 @@ func NewRequestSigner(keyId string, key string, algorithm string) (*RequestSigne
 	}, nil
 }
 
+// NewCustomRequestSigner creates a new RequestSigner with a custom signing algorithm.
 func NewCustomRequestSigner(keyId string, algorithm string, signer Signer) *RequestSigner {
 	return &RequestSigner{
 		keyId:     keyId,
@@ -48,6 +56,8 @@ func NewCustomRequestSigner(keyId string, algorithm string, signer Signer) *Requ
 	}
 }
 
+// SignRequest signs a request, populating the Authorization Header with the resulting
+// HTTP Signature
 func (rs *RequestSigner) SignRequest(request *http.Request, headers []string, jwt string) error {
 	if _, ok := request.Header["Date"]; !ok {
 		request.Header["Date"] = []string{time.Now().Format(time.RFC1123)}

@@ -17,6 +17,9 @@ import (
 
 type verifier func(string, []byte) (bool, error)
 
+// VerifySignature takes a ParsedSignature and a public key, and validates that
+// the signature was signed with the given algorithm and a corresponding private
+// key.
 func VerifySignature(parsedSignature *ParsedSignature, pubKey string) (bool, error) {
 	v, err := getVerifier(parsedSignature.Algorithm(), pubKey)
 	if err != nil {

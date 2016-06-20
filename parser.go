@@ -8,8 +8,14 @@ import (
 	"time"
 )
 
+// DefaultClockSkew specifies the allowed time difference between requests and signature parsing
 var DefaultClockSkew time.Duration = 300 * time.Second
+
+// DefaultHeaders specify the headers to be parsed by default
 var DefaultHeaders []string = []string{"date"}
+
+// If ParseStrict is true, then obsolete versions of the HTTP-Signature standard will not be supported.
+// Currently, this controls whether to allow the "request-line" psuedo-header.
 var ParseStrict bool = false
 
 const (
@@ -24,12 +30,15 @@ const (
 	paramsStateComma = 3
 )
 
+// ParsedSignature contains the details of a parsed signature
 type ParsedSignature struct {
 	scheme        string
 	params        map[string]string
 	signingString string
 }
 
+// ParseRequest parses an http.Request and returns a ParsedSignature with the values
+// from the Authorization Header.
 func ParseRequest(request *http.Request) (*ParsedSignature, error) {
 	state := stateNew
 	substate := paramsStateName
@@ -193,30 +202,37 @@ func ParseRequest(request *http.Request) (*ParsedSignature, error) {
 	return &parsed, nil
 }
 
+// Scheme is the scheme of the parsed signature. Currently, the only supported scheme is "Signature"
 func (s *ParsedSignature) Scheme() string {
 	return s.scheme
 }
 
+// Params is a map of sttrings containing the signature parameters
 func (s *ParsedSignature) Params() map[string]string {
 	return s.params
 }
 
+// SigningString is the string that was signed by the client. Verifiers should use this to check that a singature is valid
 func (s *ParsedSignature) SigningString() string {
 	return s.signingString
 }
 
+// Algorithm is the signing and hash algorithm, like "rsa-sha256"
 func (s *ParsedSignature) Algorithm() string {
 	return strings.ToUpper(s.params["algorithm"])
 }
 
+// KeyId is the keyId parameter from the signature
 func (s *ParsedSignature) KeyId() string {
 	return s.params["keyId"]
 }
 
+// Signature is the base-64 encoded signature
 func (s *ParsedSignature) Signature() string {
 	return s.params["signature"]
 }
 
+// Headers is the slice of headers that were signed by the client
 func (s *ParsedSignature) Headers() []string {
 	return strings.Split(s.params["headers"], " ")
 }
