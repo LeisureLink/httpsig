@@ -1,0 +1,11 @@
+{
+  "name": "httpsig-tests",
+  "version": "1.0.0",
+  "description": "Contains node.js apps used to verify cross-compatibility with httpsig (go implementation of http-signature)",
+  "main": "server.js",
+  "author": "tech@leisurelink.com",
+  "license": "MIT",
+  "dependencies": {
+    "http-signature": "^1.1.1"
+  }
+}

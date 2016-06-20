@@ -21,7 +21,7 @@ func getTestKey(keyName string) string {
 func getTestPrivateKey(alg string) string {
 	parts, _ := validateAlgorithm(alg)
 	if parts.sign == "hmac" {
-		return "sooper-sekrit-kee"
+		return "sooper-seekrit-kee"
 	}
 	return getTestKey(fmt.Sprintf("%s_private.pem", parts.sign))
 }

@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	u "net/url"
 	"strings"
 	"time"
 )
@@ -61,9 +62,9 @@ func (rs *RequestSigner) SignRequest(request *http.Request, headers []string, jw
 			if SignStrict {
 				return errors.New("request-line is not a valid header with strict parsing enabled.")
 			}
-			lines = append(lines, fmt.Sprintf("%s %s %s", request.Method, request.RequestURI, request.Proto))
+			lines = append(lines, fmt.Sprintf("%s %s %s", request.Method, getPathAndQueryFromURL(request.URL), request.Proto))
 		} else if h == "(request-target)" {
-			lines = append(lines, fmt.Sprintf("(request-target): %s %s", strings.ToLower(request.Method), request.RequestURI))
+			lines = append(lines, fmt.Sprintf("(request-target): %s %s", strings.ToLower(request.Method), getPathAndQueryFromURL(request.URL)))
 		} else {
 			values, ok := request.Header[headerCase(h)]
 			if !ok {
@@ -79,6 +80,17 @@ func (rs *RequestSigner) SignRequest(request *http.Request, headers []string, jw
 	}
 	request.Header["Authorization"] = []string{formatSignature(rs.keyId, rs.algorithm, headers, jwt, signature)}
 	return nil
+}
+
+func getPathAndQueryFromURL(url *u.URL) (pathAndQuery string) {
+	pathAndQuery = url.Path
+	if pathAndQuery == "" {
+		pathAndQuery = "/"
+	}
+	if url.RawQuery != "" {
+		pathAndQuery += "?" + url.RawQuery
+	}
+	return pathAndQuery
 }
 
 func formatSignature(keyId string, algorithm string, headers []string, jwt string, signature []byte) string {
@@ -107,7 +119,7 @@ func rsaSigner(key string, hash crypto.Hash) (Signer, error) {
 	privateKey.Precompute()
 	return func(data string) ([]byte, error) {
 		hashed := calcHash(data, hash)
-		return rsa.SignPSS(rand.Reader, privateKey, hash, hashed, nil)
+		return rsa.SignPKCS1v15(rand.Reader, privateKey, hash, hashed)
 	}, nil
 }
 
@@ -118,6 +130,10 @@ func dsaSigner(key string, hash crypto.Hash) (Signer, error) {
 	}
 	return func(data string) ([]byte, error) {
 		hashed := calcHash(data, hash)
+		qlen := len(privateKey.Q.Bytes())
+		if len(hashed) > qlen {
+			hashed = hashed[:qlen]
+		}
 		r, s, err := dsa.Sign(rand.Reader, privateKey, hashed)
 		if err != nil {
 			return nil, err

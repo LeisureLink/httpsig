@@ -41,7 +41,7 @@ func hmacVerifier(secret string, hash crypto.Hash) verifier {
 func rsaVerifier(key *rsa.PublicKey, hash crypto.Hash) verifier {
 	return func(data string, sig []byte) (bool, error) {
 		hashed := calcHash(data, hash)
-		err := rsa.VerifyPSS(key, hash, hashed, sig, nil)
+		err := rsa.VerifyPKCS1v15(key, hash, hashed, sig)
 		return err == nil, err
 	}
 }
@@ -49,6 +49,10 @@ func rsaVerifier(key *rsa.PublicKey, hash crypto.Hash) verifier {
 func dsaVerifier(key *dsa.PublicKey, hash crypto.Hash) verifier {
 	return func(data string, sig []byte) (bool, error) {
 		hashed := calcHash(data, hash)
+		qlen := len(key.Q.Bytes())
+		if len(hashed) > qlen {
+			hashed = hashed[:qlen]
+		}
 		s := dsaSignature{}
 		if _, err := asn1.Unmarshal(sig, &s); err != nil {
 			return false, err

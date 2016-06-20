@@ -51,6 +51,7 @@ func signVerifyAndAssert(t *testing.T, alg string, withJWT bool) {
 		jwt = getJWT()
 	}
 	req, err := getSignedRequest(getTestPrivateKey(alg), alg, jwt)
+	req.RequestURI = getPathAndQueryFromURL(req.URL)
 	assert.Nil(t, err)
 	parsed, err := ParseRequest(req)
 	assert.Nil(t, err)
