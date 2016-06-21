@@ -1,15 +1,14 @@
 package httpsig
 
 import (
-	"bytes"
+	"bufio"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
-	"strings"
 	"testing"
-	"time"
 )
 
 func TestClientCanCallNodeServer(t *testing.T) {
@@ -19,7 +18,10 @@ func TestClientCanCallNodeServer(t *testing.T) {
 	if port == "" {
 		port = "8080"
 	}
-	cmd := startNodeServer(t, port)
+	ready := make(chan *exec.Cmd)
+	out := make(chan string, 12)
+	go startNodeServer(t, port, ready, out)
+	cmd := <-ready
 	defer cmd.Process.Kill()
 
 	verifyClientCanCallNodeServer(t, port, "hmac-sha1")
@@ -37,7 +39,6 @@ func TestClientCanCallNodeServer(t *testing.T) {
 }
 
 func verifyClientCanCallNodeServer(t *testing.T, port string, algorithm string) {
-	defer readServerOut(t)
 	t.Logf("Calling node server with %s algorithm", algorithm)
 	req, _ := http.NewRequest("GET", fmt.Sprintf("http://localhost:%s/", port), nil)
 	signer, _ := NewRequestSigner(getKeyIdForTests(algorithm), getPrivateKeyForTests(algorithm), algorithm)
@@ -65,23 +66,35 @@ func getKeyIdForTests(alg string) string {
 	return fmt.Sprintf("%s_public.pem", algorithm.sign)
 }
 
-var serverOut bytes.Buffer
+func startNodeServer(t *testing.T, port string, ch chan *exec.Cmd, out chan string) {
+	r, w := io.Pipe()
+	read := bufio.NewReader(r)
 
-func startNodeServer(t *testing.T, port string) (cmd *exec.Cmd) {
-	cmd = exec.Command("node", "server.js", port)
+	cmd := exec.Command("node", "server.js", port)
 	cmd.Dir = "./test"
-	cmd.Stdout = &serverOut
-	cmd.Stderr = &serverOut
+	cmd.Stdout = w
+	cmd.Stderr = w
 	cmd.Start()
 
-	for i := 0; i < 10; i++ {
-		if strings.Contains(readServerOut(t), "Listening") {
-			break
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
+	go logOut(t, read, out)
+
+	<-out // wait for Listening
+
+	ch <- cmd
 
 	return
+}
+
+func logOut(t *testing.T, r *bufio.Reader, out chan string) {
+	for {
+		line, e := r.ReadString('\n')
+		if e != nil {
+			t.Log(e)
+			return
+		}
+		t.Logf("server: %s", line)
+		out <- line
+	}
 }
 
 func npmInstall() {
@@ -91,13 +104,4 @@ func npmInstall() {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func readServerOut(t *testing.T) string {
-	out, _ := serverOut.ReadString(0)
-	lines := strings.Split(out, "\n")
-	for _, line := range lines {
-		t.Logf("server: %s\n", line)
-	}
-	return out
 }
