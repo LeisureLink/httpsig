@@ -86,7 +86,7 @@ func verifyClientCanCallNodeServer(t *testing.T, port string, algorithm string) 
 	fmt.Printf("Calling node server with %s algorithm\n", algorithm)
 	req, _ := http.NewRequest("GET", fmt.Sprintf("http://localhost:%s/", port), nil)
 	signer, _ := httpsig.NewRequestSigner(getKeyId(algorithm), getKey(algorithm), algorithm)
-	err := signer.SignRequest(req, []string{"date", "(request-target)"}, "")
+	err := signer.SignRequest(req, []string{"date", "(request-target)"}, nil)
 	if err != nil {
 		t.Error(err)
 		return

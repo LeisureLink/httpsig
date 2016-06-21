@@ -58,7 +58,7 @@ func NewCustomRequestSigner(keyId string, algorithm string, signer Signer) *Requ
 
 // SignRequest signs a request, populating the Authorization Header with the resulting
 // HTTP Signature
-func (rs *RequestSigner) SignRequest(request *http.Request, headers []string, jwt string) error {
+func (rs *RequestSigner) SignRequest(request *http.Request, headers []string, ext map[string]string) error {
 	if _, ok := request.Header["Date"]; !ok {
 		request.Header["Date"] = []string{time.Now().Format(time.RFC1123)}
 	}
@@ -88,7 +88,7 @@ func (rs *RequestSigner) SignRequest(request *http.Request, headers []string, jw
 	if err != nil {
 		return err
 	}
-	request.Header["Authorization"] = []string{formatSignature(rs.keyId, rs.algorithm, headers, jwt, signature)}
+	request.Header["Authorization"] = []string{formatSignature(rs.keyId, rs.algorithm, headers, ext, signature)}
 	return nil
 }
 
@@ -103,10 +103,11 @@ func getPathAndQueryFromURL(url *u.URL) (pathAndQuery string) {
 	return pathAndQuery
 }
 
-func formatSignature(keyId string, algorithm string, headers []string, jwt string, signature []byte) string {
+func formatSignature(keyId string, algorithm string, headers []string, ext map[string]string, signature []byte) string {
 	sig := fmt.Sprintf("Signature keyId=\"%s\",algorithm=\"%s\",headers=\"%s\"", keyId, algorithm, strings.Join(headers, " "))
-	if jwt != "" {
-		sig += fmt.Sprintf(",jwt=\"%s\"", jwt)
+
+	for key, val := range ext {
+		sig += fmt.Sprintf(",%s=\"%s\"", key, val)
 	}
 	sig += fmt.Sprintf(",signature=\"%s\"", base64.StdEncoding.EncodeToString(signature))
 	return sig

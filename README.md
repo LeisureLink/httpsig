@@ -1,6 +1,6 @@
 # httpsig
 
-httpsig is a go package with for [HTTP Signature](https://tools.ietf.org/html/draft-cavage-http-signatures-05). It also implements jwt as an anticipated [extension](https://tools.ietf.org/html/draft-cavage-http-signatures-05#appendix-B) to the standard.
+httpsig is a go package with for [HTTP Signature](https://tools.ietf.org/html/draft-cavage-http-signatures-05). It also implements [extensions](https://tools.ietf.org/html/draft-cavage-http-signatures-05#appendix-B) to the standard, as LeisureLink uses an anticipated jwt extension.
 
 ## Usage
 
@@ -13,9 +13,9 @@ import "github.com/LeisureLink/httpsig"
 This example signs a request and includes the date, and (request-target) header components in the signature.
 ```go
 // set key as a string from file read, memory, etc.
-req, _ = http.NewRequest("GET", "http://example.com/path/to/resource", nil)
+req, _ := http.NewRequest("GET", "http://example.com/path/to/resource", nil)
 signer, _ := httpsig.NewRequestSigner("my-key-id", key, "rsa-sha256")
-err = signer.SignRequest(req, []string{"date", "(request-target)"}, jwt)
+err := signer.SignRequest(req, []string{"date", "(request-target)"}, jwt)
 ```
 
 
