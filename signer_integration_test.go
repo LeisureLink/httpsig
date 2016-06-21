@@ -19,8 +19,7 @@ func TestClientCanCallNodeServer(t *testing.T) {
 		port = "8080"
 	}
 	ready := make(chan *exec.Cmd)
-	out := make(chan string, 12)
-	go startNodeServer(t, port, ready, out)
+	go startNodeServer(t, port, ready)
 	cmd := <-ready
 	defer cmd.Process.Kill()
 
@@ -66,7 +65,7 @@ func getKeyIdForTests(alg string) string {
 	return fmt.Sprintf("%s_public.pem", algorithm.sign)
 }
 
-func startNodeServer(t *testing.T, port string, ch chan *exec.Cmd, out chan string) {
+func startNodeServer(t *testing.T, port string, ch chan *exec.Cmd) {
 	r, w := io.Pipe()
 	read := bufio.NewReader(r)
 
@@ -76,6 +75,7 @@ func startNodeServer(t *testing.T, port string, ch chan *exec.Cmd, out chan stri
 	cmd.Stderr = w
 	cmd.Start()
 
+	out := make(chan string, 12)
 	go logOut(t, read, out)
 
 	<-out // wait for Listening
