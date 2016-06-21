@@ -9,7 +9,7 @@ import (
 func getTestPublicKey(alg string) string {
 	parts, _ := validateAlgorithm(alg)
 	if parts.sign == "hmac" {
-		return getTestPrivateKey(alg)
+		return getPrivateKeyForTests(alg)
 	}
 	return getTestKey(fmt.Sprintf("%s_public.pem", parts.sign))
 }
@@ -50,7 +50,8 @@ func signVerifyAndAssert(t *testing.T, alg string, withJWT bool) {
 	if withJWT {
 		ext = getJWT()
 	}
-	req, err := getSignedRequest(getTestPrivateKey(alg), alg, ext)
+	req, err := getExampleSignedRequest(alg, ext)
+	// this is only needed to simulate an actual request
 	req.RequestURI = getPathAndQueryFromURL(req.URL)
 	assert.Nil(t, err)
 	parsed, err := ParseRequest(req)

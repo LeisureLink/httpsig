@@ -10,41 +10,6 @@ import (
 	"time"
 )
 
-func getTestKey(keyName string) string {
-	f, err := ioutil.ReadFile(fmt.Sprintf("test/%s", keyName))
-	if err != nil {
-		panic(err)
-	}
-	return string(f)
-}
-
-func getTestPrivateKey(alg string) string {
-	parts, _ := validateAlgorithm(alg)
-	if parts.sign == "hmac" {
-		return "sooper-seekrit-kee"
-	}
-	return getTestKey(fmt.Sprintf("%s_private.pem", parts.sign))
-}
-
-func getSignedRequest(key string, alg string, ext map[string]string) (req *http.Request, err error) {
-	req, _ = http.NewRequest("GET", "http://example.com/path/to/resource", nil)
-	signer, _ := NewRequestSigner(SampleKeyId, key, alg)
-	err = signer.SignRequest(req, []string{"date", "(request-target)"}, ext)
-	return
-}
-
-func getJWT() map[string]string {
-	token := jwt.NewWithClaims(jwt.SigningMethodNone, jwt.MapClaims{
-		"foo": "bar",
-		"exp": time.Now().Unix() + 30000,
-	})
-
-	tokenString, _ := token.SignedString("ignored")
-	return map[string]string{
-		"jwt": tokenString,
-	}
-}
-
 // These tests just verify that a signature is made, the verify tests will verify that the signature was valid
 func TestSignRequests(t *testing.T) {
 	// hmac
@@ -78,13 +43,47 @@ func TestSignRequests(t *testing.T) {
 }
 
 func signAndAssert(t *testing.T, alg string, withJWT bool) {
-	key := getTestPrivateKey(alg)
 	var ext map[string]string = nil
 	if withJWT {
 		ext = getJWT()
 	}
-	req, err := getSignedRequest(key, alg, ext)
+	req, err := getExampleSignedRequest(alg, ext)
 	assert.Nil(t, err)
 	authz := req.Header.Get("Authorization")
 	assert.NotEmpty(t, authz)
+}
+
+func getExampleSignedRequest(alg string, ext map[string]string) (req *http.Request, err error) {
+	req, _ = http.NewRequest("GET", "http://example.com/path/to/resource", nil)
+	signer, _ := NewRequestSigner(SampleKeyId, getPrivateKeyForTests(alg), alg)
+	err = signer.SignRequest(req, []string{"date", "(request-target)"}, ext)
+	return
+}
+
+func getJWT() map[string]string {
+	token := jwt.NewWithClaims(jwt.SigningMethodNone, jwt.MapClaims{
+		"foo": "bar",
+		"exp": time.Now().Unix() + 30000,
+	})
+
+	tokenString, _ := token.SignedString("ignored")
+	return map[string]string{
+		"jwt": tokenString,
+	}
+}
+
+func getPrivateKeyForTests(alg string) string {
+	algorithm, _ := validateAlgorithm(alg)
+	if algorithm.sign == "hmac" {
+		return "sooper-seekrit-kee"
+	}
+	return getTestKey(fmt.Sprintf("%s_private.pem", algorithm.sign))
+}
+
+func getTestKey(file string) string {
+	f, err := ioutil.ReadFile(fmt.Sprintf("test/%s", file))
+	if err != nil {
+		panic(err)
+	}
+	return string(f)
 }

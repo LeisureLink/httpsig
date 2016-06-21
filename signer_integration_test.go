@@ -1,11 +1,9 @@
-package httpsigtests
+package httpsig
 
 import (
 	"bytes"
 	"fmt"
-	"github.com/LeisureLink/httpsig"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -14,59 +12,15 @@ import (
 	"time"
 )
 
-var serverOut bytes.Buffer
-
-func startNodeServer(port string) (cmd *exec.Cmd) {
-	cmd = exec.Command("node", "server.js", port)
-	cmd.Stdout = &serverOut
-	cmd.Stderr = &serverOut
-	cmd.Start()
-	return
-}
-
-func printOut() string {
-	out, _ := serverOut.ReadString(0)
-	lines := strings.Split(out, "\n")
-	for _, line := range lines {
-		fmt.Printf("server: %s\n", line)
-	}
-	return out
-}
-
-func getKeyId(algorithm string) string {
-	alg := strings.Split(strings.ToLower(algorithm), "-")[0]
-	if alg == "hmac" {
-		return "sooper-seekrit-kee"
-	}
-	return fmt.Sprintf("%s_public.pem", alg)
-}
-
-func getKey(algorithm string) string {
-	alg := strings.Split(strings.ToLower(algorithm), "-")[0]
-	if alg == "hmac" {
-		return "sooper-seekrit-kee"
-	}
-	f, err := ioutil.ReadFile(fmt.Sprintf("%s_private.pem", alg))
-	if err != nil {
-		panic(err)
-	}
-	return string(f)
-}
-
 func TestClientCanCallNodeServer(t *testing.T) {
+	npmInstall()
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-	cmd := startNodeServer(port)
-	// defer printOut()
+	cmd := startNodeServer(t, port)
 	defer cmd.Process.Kill()
-	for i := 0; i < 10; i++ {
-		if strings.Contains(printOut(), "Listening") {
-			break
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
 
 	verifyClientCanCallNodeServer(t, port, "hmac-sha1")
 	verifyClientCanCallNodeServer(t, port, "hmac-sha256")
@@ -83,9 +37,10 @@ func TestClientCanCallNodeServer(t *testing.T) {
 }
 
 func verifyClientCanCallNodeServer(t *testing.T, port string, algorithm string) {
-	fmt.Printf("Calling node server with %s algorithm\n", algorithm)
+	defer readServerOut(t)
+	t.Logf("Calling node server with %s algorithm", algorithm)
 	req, _ := http.NewRequest("GET", fmt.Sprintf("http://localhost:%s/", port), nil)
-	signer, _ := httpsig.NewRequestSigner(getKeyId(algorithm), getKey(algorithm), algorithm)
+	signer, _ := NewRequestSigner(getKeyIdForTests(algorithm), getPrivateKeyForTests(algorithm), algorithm)
 	err := signer.SignRequest(req, []string{"date", "(request-target)"}, nil)
 	if err != nil {
 		t.Error(err)
@@ -99,5 +54,50 @@ func verifyClientCanCallNodeServer(t *testing.T, port string, algorithm string) 
 		return
 	}
 	assert.Equal(t, http.StatusOK, res.StatusCode)
-	fmt.Println(res.StatusCode)
+	t.Log(res.StatusCode)
+}
+
+func getKeyIdForTests(alg string) string {
+	algorithm, _ := validateAlgorithm(alg)
+	if algorithm.sign == "hmac" {
+		return getPrivateKeyForTests(alg)
+	}
+	return fmt.Sprintf("%s_public.pem", algorithm.sign)
+}
+
+var serverOut bytes.Buffer
+
+func startNodeServer(t *testing.T, port string) (cmd *exec.Cmd) {
+	cmd = exec.Command("node", "server.js", port)
+	cmd.Dir = "./test"
+	cmd.Stdout = &serverOut
+	cmd.Stderr = &serverOut
+	cmd.Start()
+
+	for i := 0; i < 10; i++ {
+		if strings.Contains(readServerOut(t), "Listening") {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	return
+}
+
+func npmInstall() {
+	cmd := exec.Command("npm", "install")
+	cmd.Dir = "./test"
+	err := cmd.Run()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func readServerOut(t *testing.T) string {
+	out, _ := serverOut.ReadString(0)
+	lines := strings.Split(out, "\n")
+	for _, line := range lines {
+		t.Logf("server: %s\n", line)
+	}
+	return out
 }
