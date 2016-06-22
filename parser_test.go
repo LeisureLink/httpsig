@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	SampleKeyId     = "keyId"
+	SampleKeyID     = "keyId"
 	SampleAlgorithm = "rsa-sha256"
 	SampleHeaders   = "host date"
 	SampleSignature = "abcdefg"
@@ -27,14 +27,14 @@ func TestParseRequestWithNoAuthorizationHeader(t *testing.T) {
 
 func TestParseRequest(t *testing.T) {
 	req, _ := http.NewRequest("GET", "http://example.com/path/to/resource", nil)
-	req.Header.Set("Authorization", fmt.Sprintf("Signature keyId=\"%s\",algorithm=\"%s\",headers=\"%s\",signature=\"%s\"", SampleKeyId, SampleAlgorithm, SampleHeaders, SampleSignature))
+	req.Header.Set("Authorization", fmt.Sprintf("Signature keyId=\"%s\",algorithm=\"%s\",headers=\"%s\",signature=\"%s\"", SampleKeyID, SampleAlgorithm, SampleHeaders, SampleSignature))
 	req.Header.Set("Date", time.Now().Format(time.RFC1123))
 	parsed, err := ParseRequest(req)
 	assert.Nil(t, err)
 	assert.NotNil(t, parsed)
 	assert.Equal(t, "Signature", parsed.Scheme())
 	assert.NotNil(t, parsed.Params())
-	assert.Equal(t, SampleKeyId, parsed.KeyId())
+	assert.Equal(t, SampleKeyID, parsed.KeyId())
 	assert.Equal(t, strings.ToUpper(SampleAlgorithm), parsed.Algorithm())
 	assert.Equal(t, SampleHeaders, strings.Join(parsed.Headers(), " "))
 	assert.Equal(t, SampleSignature, parsed.Signature())
@@ -45,7 +45,7 @@ func TestParseRequest(t *testing.T) {
 
 func TestParseRequestWithNoHeaders(t *testing.T) {
 	req, _ := http.NewRequest("GET", "http://example.com/path/to/resource", nil)
-	req.Header.Set("Authorization", fmt.Sprintf("Signature keyId=\"%s\",algorithm=\"%s\",signature=\"%s\"", SampleKeyId, SampleAlgorithm, SampleSignature))
+	req.Header.Set("Authorization", fmt.Sprintf("Signature keyId=\"%s\",algorithm=\"%s\",signature=\"%s\"", SampleKeyID, SampleAlgorithm, SampleSignature))
 	req.Header.Set("Date", time.Now().Format(time.RFC1123))
 	parsed, err := ParseRequest(req)
 	assert.Nil(t, err)
@@ -58,7 +58,7 @@ func TestParseRequestWithNoHeaders(t *testing.T) {
 func TestParseRequestWithRequestLine(t *testing.T) {
 	req, _ := http.NewRequest("GET", "http://example.com/path/to/resource", nil)
 	req.RequestURI = "/path/to/resource"
-	req.Header.Set("Authorization", fmt.Sprintf("Signature keyId=\"%s\",algorithm=\"%s\",headers=\"%s request-line\",signature=\"%s\"", SampleKeyId, SampleAlgorithm, SampleHeaders, SampleSignature))
+	req.Header.Set("Authorization", fmt.Sprintf("Signature keyId=\"%s\",algorithm=\"%s\",headers=\"%s request-line\",signature=\"%s\"", SampleKeyID, SampleAlgorithm, SampleHeaders, SampleSignature))
 	req.Header.Set("Date", time.Now().Format(time.RFC1123))
 	parsed, err := ParseRequest(req)
 	assert.Nil(t, err)
@@ -73,7 +73,7 @@ func TestParseRequestWithRequestLine(t *testing.T) {
 func TestParseRequestWithRequestTarget(t *testing.T) {
 	req, _ := http.NewRequest("GET", "http://example.com/path/to/resource", nil)
 	req.RequestURI = "/path/to/resource"
-	req.Header.Set("Authorization", fmt.Sprintf("Signature keyId=\"%s\",algorithm=\"%s\",headers=\"%s (request-target)\",signature=\"%s\"", SampleKeyId, SampleAlgorithm, SampleHeaders, SampleSignature))
+	req.Header.Set("Authorization", fmt.Sprintf("Signature keyId=\"%s\",algorithm=\"%s\",headers=\"%s (request-target)\",signature=\"%s\"", SampleKeyID, SampleAlgorithm, SampleHeaders, SampleSignature))
 	req.Header.Set("Date", time.Now().Format(time.RFC1123))
 	parsed, err := ParseRequest(req)
 	assert.Nil(t, err)
@@ -87,7 +87,7 @@ func TestParseRequestWithRequestTarget(t *testing.T) {
 
 func TestParseRequestWithDateBeforeClockSkewRange(t *testing.T) {
 	req, _ := http.NewRequest("GET", "http://example.com/path/to/resource", nil)
-	req.Header.Set("Authorization", fmt.Sprintf("Signature keyId=\"%s\",algorithm=\"%s\",signature=\"%s\"", SampleKeyId, SampleAlgorithm, SampleSignature))
+	req.Header.Set("Authorization", fmt.Sprintf("Signature keyId=\"%s\",algorithm=\"%s\",signature=\"%s\"", SampleKeyID, SampleAlgorithm, SampleSignature))
 	req.Header.Set("Date", time.Now().Add(-DefaultClockSkew-time.Second).Format(time.RFC1123))
 	parsed, err := ParseRequest(req)
 	assert.NotNil(t, err)
@@ -97,7 +97,7 @@ func TestParseRequestWithDateBeforeClockSkewRange(t *testing.T) {
 
 func TestParseRequestWithDateAfterClockSkewRange(t *testing.T) {
 	req, _ := http.NewRequest("GET", "http://example.com/path/to/resource", nil)
-	req.Header.Set("Authorization", fmt.Sprintf("Signature keyId=\"%s\",algorithm=\"%s\",signature=\"%s\"", SampleKeyId, SampleAlgorithm, SampleSignature))
+	req.Header.Set("Authorization", fmt.Sprintf("Signature keyId=\"%s\",algorithm=\"%s\",signature=\"%s\"", SampleKeyID, SampleAlgorithm, SampleSignature))
 	req.Header.Set("Date", time.Now().Add(DefaultClockSkew+time.Second).Format(time.RFC1123))
 	parsed, err := ParseRequest(req)
 	assert.NotNil(t, err)

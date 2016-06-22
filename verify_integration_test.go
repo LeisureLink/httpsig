@@ -75,10 +75,10 @@ func (h *TestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte("Authoirzation Passed"))
 }
 
-func getPublicKeyForTests(alg string, keyId string) string {
+func getPublicKeyForTests(alg string, keyID string) string {
 	algorithm, _ := validateAlgorithm(alg)
 	if algorithm.sign == "hmac" {
 		return getPrivateKeyForTests(alg)
 	}
-	return getTestKey(keyId)
+	return getTestKey(keyID)
 }

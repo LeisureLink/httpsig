@@ -43,7 +43,7 @@ func TestSignRequests(t *testing.T) {
 }
 
 func signAndAssert(t *testing.T, alg string, withJWT bool) {
-	var ext map[string]string = nil
+	var ext map[string]string
 	if withJWT {
 		ext = getJWT()
 	}
@@ -55,7 +55,7 @@ func signAndAssert(t *testing.T, alg string, withJWT bool) {
 
 func getExampleSignedRequest(alg string, ext map[string]string) (req *http.Request, err error) {
 	req, _ = http.NewRequest("GET", "http://example.com/path/to/resource", nil)
-	signer, _ := NewRequestSigner(SampleKeyId, getPrivateKeyForTests(alg), alg)
+	signer, _ := NewRequestSigner(SampleKeyID, getPrivateKeyForTests(alg), alg)
 	err = signer.SignRequest(req, []string{"date", "(request-target)"}, ext)
 	return
 }

@@ -5,7 +5,6 @@ import (
 	"crypto/dsa"
 	"encoding/asn1"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -36,16 +35,15 @@ type dsaSignature struct {
 func validateAlgorithm(algorithm string) (*hashAlgorithm, error) {
 	alg := strings.Split(strings.ToLower(algorithm), "-")
 	if len(alg) != 2 {
-		return nil, errors.New(fmt.Sprintf("%s is not a valid algorithm", strings.ToUpper(algorithm)))
+		return nil, fmt.Errorf("%s is not a valid algorithm", strings.ToUpper(algorithm))
 	}
 	if hash, ok := validHashAlgorithms[alg[1]]; ok {
 		if _, ok := validAlgorithms[alg[0]]; !ok {
-			return nil, errors.New(fmt.Sprintf("%s type keys are not supported", strings.ToUpper(alg[0])))
+			return nil, fmt.Errorf("%s type keys are not supported", strings.ToUpper(alg[0]))
 		}
 		return &hashAlgorithm{alg[0], hash}, nil
-	} else {
-		return nil, errors.New(fmt.Sprintf("%s is not a supported hash algorithm", strings.ToUpper(alg[0])))
 	}
+	return nil, fmt.Errorf("%s is not a supported hash algorithm", strings.ToUpper(alg[0]))
 }
 
 func hashName(hash crypto.Hash) string {

@@ -40,7 +40,7 @@ func TestClientCanCallNodeServer(t *testing.T) {
 func verifyClientCanCallNodeServer(t *testing.T, port string, algorithm string) {
 	t.Logf("Calling node server with %s algorithm", algorithm)
 	req, _ := http.NewRequest("GET", fmt.Sprintf("http://localhost:%s/", port), nil)
-	signer, _ := NewRequestSigner(getKeyIdForTests(algorithm), getPrivateKeyForTests(algorithm), algorithm)
+	signer, _ := NewRequestSigner(getKeyIDForTests(algorithm), getPrivateKeyForTests(algorithm), algorithm)
 	err := signer.SignRequest(req, []string{"date", "(request-target)"}, nil)
 	if err != nil {
 		t.Error(err)
@@ -57,7 +57,7 @@ func verifyClientCanCallNodeServer(t *testing.T, port string, algorithm string) 
 	t.Log(res.StatusCode)
 }
 
-func getKeyIdForTests(alg string) string {
+func getKeyIDForTests(alg string) string {
 	algorithm, _ := validateAlgorithm(alg)
 	if algorithm.sign == "hmac" {
 		return getPrivateKeyForTests(alg)

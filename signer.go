@@ -25,32 +25,32 @@ type Signer func(string) ([]byte, error)
 // RequestSigner contains the SignRequest method which signs a request and
 // populates the Authorization Header
 type RequestSigner struct {
-	keyId     string
+	keyID     string
 	algorithm string
 	signer    Signer
 }
 
-// If SignStrict is true, then obsolete versions of the HTTP-Signature standard will not be supported.
+// SignStrict specifies strict signing. If true, then obsolete versions of the HTTP-Signature standard will not be supported.
 // Currently, this controls whether to allow the "request-line" psuedo-header.
-var SignStrict bool = false
+var SignStrict = false
 
-// NewRequestSigner creates a new RequestSigner with the given keyId, key, and algorithm.
-func NewRequestSigner(keyId string, key string, algorithm string) (*RequestSigner, error) {
+// NewRequestSigner creates a new RequestSigner with the given keyID, key, and algorithm.
+func NewRequestSigner(keyID string, key string, algorithm string) (*RequestSigner, error) {
 	signer, err := getSigner(algorithm, key)
 	if err != nil {
 		return nil, err
 	}
 	return &RequestSigner{
-		keyId:     keyId,
+		keyID:     keyID,
 		algorithm: algorithm,
 		signer:    signer,
 	}, nil
 }
 
 // NewCustomRequestSigner creates a new RequestSigner with a custom signing algorithm.
-func NewCustomRequestSigner(keyId string, algorithm string, signer Signer) *RequestSigner {
+func NewCustomRequestSigner(keyID string, algorithm string, signer Signer) *RequestSigner {
 	return &RequestSigner{
-		keyId:     keyId,
+		keyID:     keyID,
 		algorithm: algorithm,
 		signer:    signer,
 	}
@@ -70,7 +70,7 @@ func (rs *RequestSigner) SignRequest(request *http.Request, headers []string, ex
 		h = strings.ToLower(h)
 		if h == "request-line" {
 			if SignStrict {
-				return errors.New("request-line is not a valid header with strict parsing enabled.")
+				return errors.New("request-line is not a valid header with strict parsing enabled")
 			}
 			lines = append(lines, fmt.Sprintf("%s %s %s", request.Method, getPathAndQueryFromURL(request.URL), request.Proto))
 		} else if h == "(request-target)" {
@@ -78,7 +78,7 @@ func (rs *RequestSigner) SignRequest(request *http.Request, headers []string, ex
 		} else {
 			values, ok := request.Header[headerCase(h)]
 			if !ok {
-				return errors.New(fmt.Sprintf("No value for header \"%s\"", h))
+				return fmt.Errorf("No value for header \"%s\"", h)
 			}
 			lines = append(lines, fmt.Sprintf("%s: %s", h, values[0]))
 		}
@@ -88,7 +88,7 @@ func (rs *RequestSigner) SignRequest(request *http.Request, headers []string, ex
 	if err != nil {
 		return err
 	}
-	request.Header["Authorization"] = []string{formatSignature(rs.keyId, rs.algorithm, headers, ext, signature)}
+	request.Header["Authorization"] = []string{formatSignature(rs.keyID, rs.algorithm, headers, ext, signature)}
 	return nil
 }
 
@@ -103,8 +103,8 @@ func getPathAndQueryFromURL(url *u.URL) (pathAndQuery string) {
 	return pathAndQuery
 }
 
-func formatSignature(keyId string, algorithm string, headers []string, ext map[string]string, signature []byte) string {
-	sig := fmt.Sprintf("Signature keyId=\"%s\",algorithm=\"%s\",headers=\"%s\"", keyId, algorithm, strings.Join(headers, " "))
+func formatSignature(keyID string, algorithm string, headers []string, ext map[string]string, signature []byte) string {
+	sig := fmt.Sprintf("Signature keyId=\"%s\",algorithm=\"%s\",headers=\"%s\"", keyID, algorithm, strings.Join(headers, " "))
 
 	for key, val := range ext {
 		sig += fmt.Sprintf(",%s=\"%s\"", key, val)
@@ -181,7 +181,7 @@ func getSigner(algorithm string, key string) (Signer, error) {
 	case "ecdsa":
 		return ecdsaSigner(key, alg.hash)
 	}
-	return nil, errors.New(fmt.Sprintf("Unsupported signing algorithm: %s", algorithm))
+	return nil, fmt.Errorf("Unsupported signing algorithm: %s", algorithm)
 }
 
 func noSigner(data string) ([]byte, error) {

@@ -11,7 +11,6 @@ import (
 	"encoding/asn1"
 	"encoding/base64"
 	"encoding/pem"
-	"errors"
 	"fmt"
 )
 
@@ -90,21 +89,21 @@ func getVerifier(algorithm string, pubKey string) (verifier, error) {
 	switch key := k.(type) {
 	case *rsa.PublicKey:
 		if alg.sign != "rsa" {
-			return nil, errors.New(fmt.Sprintf("Algorithm %s doesn't match public key of type %T", algorithm, key))
+			return nil, fmt.Errorf("Algorithm %s doesn't match public key of type %T", algorithm, key)
 		}
 		return rsaVerifier(key, alg.hash), nil
 	case *dsa.PublicKey:
 		if alg.sign != "dsa" {
-			return nil, errors.New(fmt.Sprintf("Algorithm %s doesn't match public key of type %T", algorithm, key))
+			return nil, fmt.Errorf("Algorithm %s doesn't match public key of type %T", algorithm, key)
 		}
 		return dsaVerifier(key, alg.hash), nil
 	case *ecdsa.PublicKey:
 		if alg.sign != "ecdsa" {
-			return nil, errors.New(fmt.Sprintf("Algorithm %s doesn't match public key of type %T", algorithm, key))
+			return nil, fmt.Errorf("Algorithm %s doesn't match public key of type %T", algorithm, key)
 		}
 		return ecdsaVerifier(key, alg.hash), nil
 	}
-	return nil, errors.New(fmt.Sprintf("Unsupported signing algorithm: %s", algorithm))
+	return nil, fmt.Errorf("Unsupported signing algorithm: %s", algorithm)
 }
 
 func getPublicKey(key string) (interface{}, error) {

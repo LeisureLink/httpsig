@@ -9,14 +9,14 @@ import (
 )
 
 // DefaultClockSkew specifies the allowed time difference between requests and signature parsing
-var DefaultClockSkew time.Duration = 300 * time.Second
+var DefaultClockSkew = 300 * time.Second
 
 // DefaultHeaders specify the headers to be parsed by default
-var DefaultHeaders []string = []string{"date"}
+var DefaultHeaders = []string{"date"}
 
-// If ParseStrict is true, then obsolete versions of the HTTP-Signature standard will not be supported.
+// ParseStrict specifies sprict parsing. If true, then obsolete versions of the HTTP-Signature standard will not be supported.
 // Currently, this controls whether to allow the "request-line" psuedo-header.
-var ParseStrict bool = false
+var ParseStrict = false
 
 const (
 	stateNew    = 0
@@ -161,7 +161,7 @@ func ParseRequest(request *http.Request) (*ParsedSignature, error) {
 			if value, ok := request.Header[headerCase(h)]; ok {
 				signingParts[i] = h + ": " + value[0]
 			} else {
-				return nil, errors.New(fmt.Sprintf("Missing Header error: \"%s\" was not in the request.", h))
+				return nil, fmt.Errorf("Missing Header error: \"%s\" was not in the request.", h)
 			}
 		}
 	}
@@ -183,7 +183,7 @@ func ParseRequest(request *http.Request) (*ParsedSignature, error) {
 		}
 
 		if skew > DefaultClockSkew {
-			return nil, errors.New(fmt.Sprintf("Expired Request error: clock skew of %v was greater than %v", skew, DefaultClockSkew))
+			return nil, fmt.Errorf("Expired Request error: clock skew of %v was greater than %v", skew, DefaultClockSkew)
 		}
 	}
 
@@ -195,7 +195,7 @@ func ParseRequest(request *http.Request) (*ParsedSignature, error) {
 			}
 		}
 		if !found {
-			return nil, errors.New(fmt.Sprintf("%s was not a signed header", dh))
+			return nil, fmt.Errorf("%s was not a signed header", dh)
 		}
 	}
 
@@ -223,7 +223,14 @@ func (s *ParsedSignature) Algorithm() string {
 }
 
 // KeyId is the keyId parameter from the signature
+//
+// Deprecated: since 1.1
 func (s *ParsedSignature) KeyId() string {
+	return s.params["keyId"]
+}
+
+// KeyID is the keyId parameter from the signature
+func (s *ParsedSignature) KeyID() string {
 	return s.params["keyId"]
 }
 

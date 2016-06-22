@@ -46,7 +46,7 @@ func TestVerifyRequests(t *testing.T) {
 }
 
 func signVerifyAndAssert(t *testing.T, alg string, withJWT bool) {
-	var ext map[string]string = nil
+	var ext map[string]string
 	if withJWT {
 		ext = getJWT()
 	}
