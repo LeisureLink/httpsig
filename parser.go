@@ -148,17 +148,19 @@ func ParseRequest(request *http.Request) (*ParsedSignature, error) {
 				 * We allow headers from the older spec drafts if strict parsing isn't
 				 * specified in options.
 				 */
-				signingParts[i] = request.Method + " " + request.RequestURI + " " + request.Proto
+				signingParts[i] = fmt.Sprintf("%s %s %s", request.Method, request.RequestURI, request.Proto)
 			} else {
 				/* Strict parsing doesn't allow older draft headers. */
 				return nil, errors.New("Strict Parsing error: request-line is not a valid header with strict parsing enabled.")
 			}
 		} else if h == "(request-target)" {
-			signingParts[i] = "(request-target): " + strings.ToLower(request.Method) + " " + request.RequestURI
+			signingParts[i] = fmt.Sprintf("(request-target): %s %s", strings.ToLower(request.Method), request.RequestURI)
 		} else if h == "host" {
-			signingParts[i] = h + ": " + request.Host
+			signingParts[i] = fmt.Sprintf("%s: %s", h, request.Host)
+		} else if h == "content-length" {
+			signingParts[i] = fmt.Sprintf("%s: %d", h, request.ContentLength)
 		} else {
-			if value, ok := request.Header[headerCase(h)]; ok {
+			if value, ok := request.Header[http.CanonicalHeaderKey(h)]; ok {
 				signingParts[i] = h + ": " + value[0]
 			} else {
 				return nil, fmt.Errorf("Missing Header error: \"%s\" was not in the request.", h)

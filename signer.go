@@ -75,8 +75,12 @@ func (rs *RequestSigner) SignRequest(request *http.Request, headers []string, ex
 			lines = append(lines, fmt.Sprintf("%s %s %s", request.Method, getPathAndQueryFromURL(request.URL), request.Proto))
 		} else if h == "(request-target)" {
 			lines = append(lines, fmt.Sprintf("(request-target): %s %s", strings.ToLower(request.Method), getPathAndQueryFromURL(request.URL)))
+		} else if h == "host" {
+			lines = append(lines, fmt.Sprintf("%s: %s", h, request.URL.Host))
+		} else if h == "content-length" {
+			lines = append(lines, fmt.Sprintf("%s: %d", h, request.ContentLength))
 		} else {
-			values, ok := request.Header[headerCase(h)]
+			values, ok := request.Header[http.CanonicalHeaderKey(h)]
 			if !ok {
 				return fmt.Errorf("No value for header \"%s\"", h)
 			}

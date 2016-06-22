@@ -64,20 +64,6 @@ func calcHash(data string, hash crypto.Hash) []byte {
 	return h.Sum(nil)
 }
 
-func headerCase(header string) (result string) {
-	result = ""
-	lastDash := true
-	for _, code := range header {
-		c := string(code)
-		if lastDash {
-			c = strings.ToUpper(c)
-		}
-		lastDash = c == "-"
-		result += c
-	}
-	return
-}
-
 type tempDsaKey struct {
 	E1, P, Q, G, Y, X *big.Int
 }
