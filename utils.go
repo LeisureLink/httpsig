@@ -5,6 +5,7 @@ import (
 	"crypto/dsa"
 	"encoding/asn1"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -32,6 +33,24 @@ type dsaSignature struct {
 	R, S *big.Int
 }
 
+func autoDetectAlgorithm(key string) (*hashAlgorithm, error) {
+	block, _ := pem.Decode([]byte(key))
+	if block == nil {
+		return nil, errors.New("Could not determine key format, key was not in PEM format")
+	}
+	switch block.Type {
+	case "RSA PRIVATE KEY":
+		return &hashAlgorithm{"rsa", crypto.SHA256}, nil
+	case "DSA PRIVATE KEY":
+		return &hashAlgorithm{"dsa", crypto.SHA256}, nil
+	case "EC PRIVATE KEY":
+		return &hashAlgorithm{"ecdsa", crypto.SHA256}, nil
+	default:
+		return nil, fmt.Errorf("Could not determine key format (pem block type '%s')", block.Type)
+	}
+
+}
+
 func validateAlgorithm(algorithm string) (*hashAlgorithm, error) {
 	alg := strings.Split(strings.ToLower(algorithm), "-")
 	if len(alg) != 2 {
@@ -44,6 +63,10 @@ func validateAlgorithm(algorithm string) (*hashAlgorithm, error) {
 		return &hashAlgorithm{alg[0], hash}, nil
 	}
 	return nil, fmt.Errorf("%s is not a supported hash algorithm", strings.ToUpper(alg[0]))
+}
+
+func (alg *hashAlgorithm) String() string {
+	return fmt.Sprintf("%s-%s", strings.ToLower(alg.sign), strings.ToLower(hashName(alg.hash)))
 }
 
 func hashName(hash crypto.Hash) string {

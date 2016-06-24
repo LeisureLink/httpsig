@@ -35,14 +35,30 @@ type RequestSigner struct {
 var SignStrict = false
 
 // NewRequestSigner creates a new RequestSigner with the given keyID, key, and algorithm.
+// If algorithm is the empty string, then the signing algorithm will be determined from the key type,
+// and the hashing algorithm will be sha256. RSA, DSA, and ECDSA keys must be in PEM format.
 func NewRequestSigner(keyID string, key string, algorithm string) (*RequestSigner, error) {
-	signer, err := getSigner(algorithm, key)
+	var alg *hashAlgorithm
+	var err error
+	if algorithm == "" {
+		alg, err = autoDetectAlgorithm(key)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		alg, err = validateAlgorithm(algorithm)
+		if err != nil {
+			return nil, err
+		}
+	}
+	signer, err := getSigner(alg, key)
 	if err != nil {
 		return nil, err
 	}
+	a := alg.String()
 	return &RequestSigner{
 		keyID:     keyID,
-		algorithm: algorithm,
+		algorithm: a,
 		signer:    signer,
 	}, nil
 }
@@ -170,11 +186,7 @@ func ecdsaSigner(key string, hash crypto.Hash) (Signer, error) {
 	}, nil
 }
 
-func getSigner(algorithm string, key string) (Signer, error) {
-	alg, err := validateAlgorithm(algorithm)
-	if err != nil {
-		return nil, err
-	}
+func getSigner(alg *hashAlgorithm, key string) (Signer, error) {
 	switch alg.sign {
 	case "hmac":
 		return hmacSigner(key, alg.hash)
@@ -185,7 +197,7 @@ func getSigner(algorithm string, key string) (Signer, error) {
 	case "ecdsa":
 		return ecdsaSigner(key, alg.hash)
 	}
-	return nil, fmt.Errorf("Unsupported signing algorithm: %s", algorithm)
+	return nil, fmt.Errorf("Unsupported signing algorithm: %v", alg)
 }
 
 func noSigner(data string) ([]byte, error) {
