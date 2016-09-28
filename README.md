@@ -1,3 +1,5 @@
+Moved to https://github.com/twindagger/httpsig
+
 # httpsig
 
 httpsig is a go package with for [HTTP Signature](https://tools.ietf.org/html/draft-cavage-http-signatures-05). It also implements [extensions](https://tools.ietf.org/html/draft-cavage-http-signatures-05#appendix-B) to the standard, as LeisureLink uses an anticipated jwt extension.
